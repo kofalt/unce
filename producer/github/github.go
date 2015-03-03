@@ -51,6 +51,7 @@ func GetLastSplit(s string) string {
 
 func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 
+	Println("Polling Github")
 	notifications, response, err := g.client.Activity.ListNotifications(& github.NotificationListOptions{})
 
 	if err != nil {
@@ -66,7 +67,14 @@ func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 		event := &Event{}
 
 		// TODO: save to bolt, don't send this ID forever
-		// Println(*n.ID)
+		Println("Processing github", *n.ID)
+
+		if IsSeen(seen, "github", *n.ID) {
+			Println("Already seen"); continue
+		}
+
+		// Log base JSON
+		StoreJSON(log, "github", *n.ID + "-base", event)
 
 		event.Summary = *n.Repository.FullName
 		event.Message = "Activity"
@@ -93,8 +101,13 @@ func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 				prComment, _, err := g.client.Issues.GetComment(*n.Repository.Owner.Login, *n.Repository.Name, id)
 				if err != nil { Println("Github producer reports PR comment error:", err); continue }
 
+				// Log base JSON
+				StoreJSON(log, "github", *n.ID + "-comment", prComment)
+
 				event.Summary = *prComment.User.Login
 				event.Message = *n.Repository.FullName + " " + shortType + IdString + ": " + *prComment.Body
+
+				MarkSeen(seen, "github", *n.ID)
 
 			default:
 				Println("Github, unknown subject type:", *n.Subject.Type)

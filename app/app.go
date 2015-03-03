@@ -5,6 +5,7 @@ import (
 
 	"github.com/codegangsta/cli"
 
+	. "kofalt.com/unce/def"
 	"kofalt.com/unce/producer/github"
 	"kofalt.com/unce/consumer/notify-send"
 )
@@ -42,10 +43,11 @@ func Run(c *cli.Context) {
 	config := LoadorCreate()
 	seenDB, logDB := Bees()
 
+	// Sup dawgs
 	ghP := github.New(config.Producers.Github)
-
 	ns := notifysend.New()
 
+	// Later, add a loop over non-nil producers
 	if ghP != nil {
 		events := ghP.Poll(seenDB, logDB)
 
