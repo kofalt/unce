@@ -38,14 +38,16 @@ func init() {
 }
 
 func Run(c *cli.Context) {
+	// Resolve to configured and db-open state
 	config := LoadorCreate()
+	seenDB, logDB := Bees()
 
 	ghP := github.New(config.Producers.Github)
 
 	ns := notifysend.New()
 
 	if ghP != nil {
-		events := ghP.Poll()
+		events := ghP.Poll(seenDB, logDB)
 
 		for _, event := range events {
 			Println(event)

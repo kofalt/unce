@@ -6,5 +6,5 @@ type Producer interface {
 	SetupHelp() string
 
 	// Check for new UNCE.
-	Poll() []*Event
+	Poll(seen, log *bolt.DB) []*Event
 }

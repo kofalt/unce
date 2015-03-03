@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/boltdb/bolt"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 
@@ -48,7 +49,7 @@ func GetLastSplit(s string) string {
 	return bits[len(bits) - 1]
 }
 
-func (g *GithubProducer) Poll() []*Event {
+func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 
 	notifications, response, err := g.client.Activity.ListNotifications(& github.NotificationListOptions{})
 

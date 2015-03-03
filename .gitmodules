@@ -25,3 +25,6 @@
 [submodule ".gopath/src/github.com/mitchellh/go-homedir"]
 	path = .gopath/src/github.com/mitchellh/go-homedir
 	url = https://github.com/mitchellh/go-homedir.git
+[submodule ".gopath/src/github.com/boltdb/bolt"]
+	path = .gopath/src/github.com/boltdb/bolt
+	url = https://github.com/boltdb/bolt.git
