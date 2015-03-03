@@ -48,6 +48,10 @@ func GetLastSplit(s string) string {
 	bits := strings.Split(s, "/")
 	return bits[len(bits) - 1]
 }
+func GetSecondLastSplit(s string) string {
+	bits := strings.Split(s, "/")
+	return bits[len(bits) - 2]
+}
 
 func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 
@@ -87,32 +91,43 @@ func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 			// blind faith that issues works too
 			case "PullRequest", "Issue":
 				// In soviet russia, URL parses you
-				commentIdString := GetLastSplit(*n.Subject.LatestCommentURL)
+
 				IdString := GetLastSplit(*n.Subject.URL)
 
 				// For message formatting
 				shortType := "PR #"
-				if *n.Subject.Type == "Issue" { shortType = "issue #" }
-
-				id, err := strconv.Atoi(commentIdString)
-				if err != nil { Println("Github parsing PR comment ID fail:", err); continue }
-
-				// Get comment content with comment ID
-				prComment, _, err := g.client.Issues.GetComment(*n.Repository.Owner.Login, *n.Repository.Name, id)
-
-				if err != nil && strings.Contains(err.Error(), "404 Not Found") {
-					Println("Comment 404 on type", *n.Subject.Type, "not sure if actually error")
+				if *n.Subject.Type == "Issue" { shortType = "#" }
 
 
-				} else if err != nil {
-					Println("Github producer reports PR comment error:", err); continue
+				// Is there a comment?
+				if GetSecondLastSplit(*n.Subject.LatestCommentURL) == "comments" {
+					// URL parse
+					commentIdString := GetLastSplit(*n.Subject.LatestCommentURL)
+					id, err := strconv.Atoi(commentIdString)
+					if err != nil { Println("Github parsing PR comment ID fail:", err); continue }
+
+					// Get comment content with comment ID
+					prComment, _, err := g.client.Issues.GetComment(*n.Repository.Owner.Login, *n.Repository.Name, id)
+
+					if err != nil {
+						Println("Github producer reports PR comment error:", err)
+						Println("Well, sometimes these things happen...")
+
+						event.Summary = *n.Repository.FullName
+						event.Message = shortType + IdString
+					} else {
+						// Log comment JSON
+						StoreJSON(log, "github", *n.ID + "-comment", prComment)
+
+						event.Summary = *prComment.User.Login
+						event.Message = *n.Repository.FullName + " " + shortType + IdString + ": " + *prComment.Body
+					}
+
+
 				} else {
-
-					// Log comment JSON
-					StoreJSON(log, "github", *n.ID + "-comment", prComment)
-
-					event.Summary = *prComment.User.Login
-					event.Message = *n.Repository.FullName + " " + shortType + IdString + ": " + *prComment.Body
+					Println("Change with no comment", *n.Subject.LatestCommentURL)
+					event.Summary = *n.Repository.FullName
+					event.Message = shortType + IdString
 				}
 
 				MarkSeen(seen, "github", *n.ID)
