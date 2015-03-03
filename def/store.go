@@ -67,7 +67,6 @@ func Bees() (*bolt.DB, *bolt.DB) {
 	})
 	if err !=nil { Println("Error updating log.db:", err); os.Exit(1) }
 
-
 	return seen, log
 }
 
@@ -108,4 +107,18 @@ func StoreJSON(db *bolt.DB, bucket, key string, val interface{}) {
 	if err != nil { Println("Error json:", err); os.Exit(1) }
 
 	Store(db, bucket, key, b)
+}
+
+func PrintKeys(db *bolt.DB, bucket string) {
+
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucket))
+		c := b.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			Printf("%s: %s\n", k, v)
+		}
+
+		return nil
+	})
 }

@@ -2,7 +2,9 @@ package app
 
 import (
 	. "fmt"
+	"os"
 
+	"github.com/boltdb/bolt"
 	"github.com/codegangsta/cli"
 
 	. "kofalt.com/unce/def"
@@ -34,6 +36,10 @@ func init() {
 			Name:   "setup",
 			Usage:  "Get help setting up a consumer",
 			Action: Setup,
+		},{
+			Name:   "whelp",
+			Usage:  "Log for eternity",
+			Action: Whelp,
 		},
 	}
 }
@@ -61,4 +67,26 @@ func Run(c *cli.Context) {
 func Test(c *cli.Context) {
 }
 func Setup(c *cli.Context) {
+}
+func Whelp(c *cli.Context) {
+	seenDB, logDB := Bees()
+
+	var db *bolt.DB
+
+	if len(c.Args()) != 2 {
+		Println("Requires two arguments: database, and bucket.")
+		os.Exit(1)
+	}
+
+	switch c.Args()[0] {
+		case "seen":
+			db = seenDB
+		case "log":
+			db = logDB
+		default:
+			Println("First argument must be 'seen' or 'log'.")
+			os.Exit(1)
+	}
+
+	PrintKeys(db, c.Args()[1])
 }
