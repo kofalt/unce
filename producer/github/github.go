@@ -74,7 +74,7 @@ func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 		}
 
 		// Log base JSON
-		StoreJSON(log, "github", *n.ID + "-base", event)
+		StoreJSON(log, "github", *n.ID + "-base", n)
 
 		event.Summary = *n.Repository.FullName
 		event.Message = "Activity"
@@ -99,13 +99,21 @@ func (g *GithubProducer) Poll(seen, log *bolt.DB) []*Event {
 
 				// Get comment content with comment ID
 				prComment, _, err := g.client.Issues.GetComment(*n.Repository.Owner.Login, *n.Repository.Name, id)
-				if err != nil { Println("Github producer reports PR comment error:", err); continue }
 
-				// Log base JSON
-				StoreJSON(log, "github", *n.ID + "-comment", prComment)
+				if err != nil && strings.Contains(err.Error(), "404 Not Found") {
+					Println("Comment 404 on type", *n.Subject.Type, "not sure if actually error")
 
-				event.Summary = *prComment.User.Login
-				event.Message = *n.Repository.FullName + " " + shortType + IdString + ": " + *prComment.Body
+
+				} else if err != nil {
+					Println("Github producer reports PR comment error:", err); continue
+				} else {
+
+					// Log comment JSON
+					StoreJSON(log, "github", *n.ID + "-comment", prComment)
+
+					event.Summary = *prComment.User.Login
+					event.Message = *n.Repository.FullName + " " + shortType + IdString + ": " + *prComment.Body
+				}
 
 				MarkSeen(seen, "github", *n.ID)
 
